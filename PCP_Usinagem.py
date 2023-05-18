@@ -220,10 +220,10 @@ class UI(qtw.QMainWindow):
 
     def pastaprocessos(self):
 
-        # Le o arquivo e cria a lista de processos, sem desmembrar processos compostos
-        lista_processos = list(set(self.ListaPCP['PROCESSOS'].dropna().tolist()))
+        # Cria a lista de processos sem repetição, sem desmembrar processos compostos
+        lista_processos = list(set(self.ListaPCP['G'].dropna().tolist()))
 
-        # Separa os processos compostos e cria lista final
+        # Separa os processos compostos e cria a lista final
         lista_processos_temporaria = []  # Lista vazia para armazenar os itens separados
         for item in lista_processos:
             if '+' in item:
@@ -237,149 +237,144 @@ class UI(qtw.QMainWindow):
         print_processos = ', '.join(str(x) for x in lista_processos)
         print("Lista de processos:", print_processos)
 
-        ###### Cria as listas de desenhos existentes
-        ###### desenhos_path = (self.lineEdit_Desenhos.text())
-        ###### arqdir = os.listdir(desenhos_path)
-
         if self.radioButton_codigo.isChecked():
             planilhaPCP = self.ListaPCP.drop(labels=['C', 'J'], axis=1)
-
         elif self.radioButton_referencia.isChecked():
             planilhaPCP = self.ListaPCP.drop(labels=['A', 'J'], axis=1)
 
         else:
-            print("Coluna com os códigos dos desenhos nao foi selecionada. Favor informar uma opcao valida.")
+            print("Coluna com os códigos dos desenhos não foi selecionada. Favor selecionar uma opção válida.")
             return
 
-        tipos_arquivos = [".igs", ".pdf", ".dwg"]
-
-        # Cria as pastas (directories)
+        # Itera por cada processo, criando a pasta e copiando os desenhos correpondentes
         for processo in lista_processos:
-            folder_path = os.path.join((os.path.dirname(self.PCP_Path)), processo)  # Nome da pasta a ser criada
-            if os.path.exists(folder_path):
-                print("A pasta ->", processo, "<- já existe, ela não será criada novamente e este processo não será "
-                                              "criado. Utilize o botão Atualizar caso queira sobrescrever os arquivos"
-                                              " e receber um relatório dos arquivos alterados")
+
+            pasta_processo = os.path.join((os.path.dirname(self.PCP_Path)), processo)  # Nome da pasta a ser criada
+            # Confere se a pasta do processo já existe antes de criá-la. Caso ela já exista, o programa informa o usuário e pula para a próxima iteração
+            if os.path.exists(pasta_processo):
+                print("A pasta "{}' já existe, ela não será criada novamente e este processo não será criado. Utilize o botão Atualizar caso queira sobrescrever os arquivos e receber um relatório dos arquivos alterados.'.format(processo))
                 continue
             else:
-                os.mkdir(folder_path)  # Cria a pasta do processo
+                os.mkdir(pasta_processo)  # Cria a pasta do processo
 
-            # Separa a coluna de codigos pelo processo a iteracao
-            codigos_por_processo = planilhaPCP.loc[planilhaPCP['PROCESSOS'].str.contains(processo)]
+            # Filtra a planilha pelo processo correspondente da iteracao
+            codigos_por_processo = planilhaPCP.loc[planilhaPCP['G'].str.contains(processo, case=False, na=False)]
             codigos = []  # Cria uma variavel vazia tipo lista para conter os codigos do processo
 
             # Orienta o programa a buscar os códigos de acordo com a informaçao do usuario
             if self.radioButton_codigo.isChecked():
-                codigos = list(codigos_por_processo['CODIGO'])
+                codigos = list(codigos_por_processo['A'])
             elif self.radioButton_referencia.isChecked():
-                codigos = list(codigos_por_processo['REFERENCIA'])
+                codigos = list(codigos_por_processo['C'])
 
+            # Procura os arquivos correspondentes a cada código e copia para a pasta
             for codigo in codigos:
+                # Garante que a varíavel 'código' é do tipo string
                 codigo = str(codigo)
-                arquivos = [arquivo for arquivo in self.ListaArquivos if re.search(codigo, X, re.I)]  # Separa os arquivos iguais aos codigos
-                arquivos_encontrados = list(arquivos)  # Cria uma lista com os arquivos encontrados
+                # Cria uma lista com os arquivos que contém o código em seu nome
+                arquivos = [arquivo for arquivo in self.ListaArquivos if re.search(codigo, arquivo, re.I)]
 
-                for arquivo_encontrado in arquivos_encontrados:
-                    nome_arquivo = os.path.splitext(arquivo_encontrado)[0]
-                    extensao_arquivo = os.path.splitext(arquivo_encontrado)[1]
-                    if extensao_arquivo in tipos_arquivos and codigo in nome_arquivo:
-                        # Adicionar o arquivo correspondente à lista
-                        caminho_completo_origem = os.path.join(root, file)
-                        arquivos_correspondentes.append(caminho_completo_origem)
-                    dest = os.path.join(folder_path, arquivo_encontrado)  # Cria o nome do arquivo futuro
+                #Copia cada um dos arquivos para dentro da pasta
+                for arquivo in arquivos:
+                    arquivo_futuro = os.path.join(pasta_processo, arquivo)  # Cria o nome do arquivo futuro
 
                     # Confere se o desenho a ser copiado ja existe
-                    if os.path.exists(dest):
-                        print("O arquivo {} já existe na pasta e não será copiado", arquivo_encontrado)
+                    if os.path.exists(arquivo_futuro):
+                        print('O arquivo "{}" já existe na pasta e não será copiado.'.format(arquivo))
                         continue
                     else:
-                        origem = os.path.join(desenhos_path, arquivo_encontrado)
-                        shutil.copy(origem, folder_path)
+                        arquivo_original = os.path.join(self.Desenhos_Path, arquivo)
+                        shutil.copy(arquivo_original, pasta_processo)
         print("Pastas de PROCESSOS criadas com sucesso")
 
     def pastapintura(self):
 
-        ltacbmnt = pd.read_excel(PCP_path, sheet_name="Principal", usecols="J")
-        ltacbmnt = ltacbmnt.loc[ltacbmnt['ACAB. SUPERFICIAL'].str.contains('FP', na=False)]
-        ltacbmnt = np.array(ltacbmnt)
-        ltacbmnt = (np.unique(ltacbmnt))
-        ltpntr = ()
+        # Filtra a planilha para conter apenas as linhas com itens de pintura
+        listapintura = self.ListaPCP.loc[self.ListaPCP['J'].str.contains("FP|RAL|pintar", case=False, na=False)]
+
+        # Cria lista com os códigos das peças de pintura, dependendo da seleção do usuário
         if self.radioButton_codigo.isChecked():
-            ltpntr = pd.read_excel(PCP_path, sheet_name="Principal", usecols="A,J", skipfooter=1)
+            listapintura = list(set(listapintura['A'].tolist()))
         elif self.radioButton_referencia.isChecked():
-            ltpntr = pd.read_excel(PCP_path, sheet_name="Principal", usecols="C,J", skipfooter=1)
-        cdpntr = [] # Objeto lista com os codigos dos desenhos de pintura
-        flpntr = []  # Objeto lista com os arquivos de desenhos de pintura
-        fdpntr = os.path.join((os.path.dirname(PCP_path)), "PINTURA") # Nome para pasta de pintura
-        if os.path.exists(fdpntr):
-            print("A pasta ->PINTURA<- já existe, o procedimento será abortado.")
+            listapintura = list(set(listapintura['C'].tolist()))
+
+
+        # Caminho para pasta de pintura
+        pasta_pintura = os.path.join((os.path.dirname(self.PCP_Path)), "PINTURA")
+        # Verifica se a pasta já existe
+        if os.path.exists(pasta_pintura):
+            print('A pasta "PINTURA" já existe, o procedimento será abortado.')
             return
         else:
-            os.mkdir(fdpntr)  # Cria a pasta de pintura
-        for item in ltacbmnt:
-            pntr_temp = ltpntr.loc[ltpntr['ACAB. SUPERFICIAL'].str.contains(item, na=False)]
-            lcdpntr = []
-            if self.radioButton_codigo.isChecked():
-                lcdpntr = list(pntr_temp['CODIGO'])
-            elif self.radioButton_referencia.isChecked():
-                lcdpntr = list(pntr_temp['REFERENCIA'])
-            cdpntr.extend(lcdpntr)
-        for cd in cdpntr:
-            cd = str(cd)
-            srchflpntr = [fl for fl in arqdir if re.search(cd, fl, re.I)]
-            tltpntr = list(srchflpntr)
-            flpntr.extend(tltpntr)
-        for files in flpntr:
-            ftfile = os.path.join(fdpntr, files)  # Cria o nome do arquivo futuro
-            if os.path.exists(ftfile):  # Confere se o desenho a ser copiado ja existe
-                print(files + "já existe.")
+            os.mkdir(pasta_pintura)  # Cria a pasta de pintura
+
+        arquivos_pintura = []  # Variavel lista com os arquivos de desenhos de pintura encontrados
+
+        # Procura os arquivos com base nos codigos
+        for codigo in listapintura:
+            codigo = str(codigo)
+            arquivos = [arquivo for arquivo in self.ListaArquivos if re.search(codigo, arquivo, re.I)]
+            arquivos_pintura.extend(arquivos)
+
+        # Copia os arquivos encontrados
+        for arquivo in arquivos_pintura:
+            arquivo_pintura_final = os.path.join(pasta_pintura, arquivo)  # Cria o nome do arquivo futuro
+            if os.path.exists(arquivo_pintura_final):  # Confere se o desenho a ser copiado ja existe
+                print('O arquivo "{}" já existe na pasta e não será copiado.'.format(arquivo))
             else:
-                rgnfile = os.path.join(desenhos_path, files)
-                shutil.copy(rgnfile, ftfile)
-        print("Pasta de PINTURA criada com sucesso.")
+                arquivo_pintura_original = os.path.join(self.Desenhos_Path, arquivo)
+                shutil.copy(arquivo_pintura_original, pasta_pintura)
+        print('Pasta de "PINTURA" criada com sucesso.')
 
     def pastausinagem(self):
 
-        # Listagem e separacao dos processos de usinagem
-        ltsngm = pd.read_excel(PCP_path, sheet_name="Principal", usecols="K")
-        ltsngm = ltsngm.replace("-", "@")
-        ltsngm = ltsngm[ltsngm != '@']
-        ltsngm = ltsngm.dropna()
-        ltsngm = ltsngm.squeeze()
-        ltsngm = ltsngm.unique()
+        # Cria a lista de processos sem repetição, sem desmembrar processos compostos
+        lista_usinagem = set(self.ListaPCP['K'].dropna().tolist())
+        lista_usinagem.discard("-")
+        lista_usinagem = list(lista_usinagem)
 
-        # Cria a pasta de Usinagem
-        sngmfdpth = os.path.join((os.path.dirname(PCP_path)), "USINAGEM")
-        if os.path.exists(sngmfdpth):
-            self.StatusPanel.append("A pasta ->USINAGEM<- já existe, o procedimento será abortado.")
+        # Caminho da pasta de Usinagem
+        pasta_usinagem = os.path.join((os.path.dirname(self.PCP_Path)), "USINAGEM")
+        # Verifica se a pasta já existe
+        if os.path.exists(pasta_usinagem):
+            print('A pasta "USINAGEM" já existe, o procedimento será abortado.')
         else:
-            os.mkdir(sngmfdpth)  # Cria a pasta de usinagem
-        for pieces in ltsngm:
-            sngnmfldr = pieces.replace(" / ", "+")
-            sngprcssfd = os.path.join(sngmfdpth, sngnmfldr)  # Nome da pasta a ser criada
-            # self.StatusPanel.append(sngprcssfd)
-            if os.path.exists(sngprcssfd):
-                self.StatusPanel.append(str("A pasta ->" + sngnmfldr + "<- já existe,, o procedimento será abortado."))
+            os.mkdir(pasta_usinagem)  # Cria a pasta de usinagem
+
+        if self.radioButton_codigo.isChecked():
+            planilhaPCP = self.ListaPCP.drop(labels=['C', 'K'], axis=1)
+        elif self.radioButton_referencia.isChecked():
+            planilhaPCP = self.ListaPCP.drop(labels=['A', 'K'], axis=1)
+
+        for porte_usinagem in lista_usinagem:
+            # Nome da pasta a ser criada
+            pasta_porte_usinagem = os.path.join(pasta_usinagem, porte_usinagem)  # Nome da pasta a ser criada
+            # Verifica se a pasta já existe
+            if os.path.exists(pasta_porte_usinagem):
+                print("A pasta "{}' já existe, ela não será criada novamente e este processo não será criado. Utilize o botão Atualizar caso queira sobrescrever os arquivos e receber um relatório dos arquivos alterados.'.format(porte_usinagem))
                 break
             else:
-                os.mkdir(sngprcssfd)  # Cria a pasta do processo
-            sngprcsssplt = lc.loc[lc['PORTE USINAGEM'].str.fullmatch(pieces, na=False)]  # Separa a coluna de codigos por processo
-            sngcds = []
+                os.mkdir(pasta_porte_usinagem)  # Cria a pasta do processo
+
+            # Filtra a planilha pelo processo correspondente da iteracao
+            codigos_por_usinagem = planilhaPCP.loc[planilhaPCP['K'].str.fullmatch(porte_usinagem, case=False, na=False)]
+            codigos_usinagem = []  # Cria uma variavel vazia tipo lista para conter os codigos do processo
+
             if self.radioButton_codigo.isChecked():
-                sngcds = list(sngprcsssplt['CODIGO'])
+                codigos_usinagem = list(codigos_por_usinagem['A'])
             elif self.radioButton_referencia.isChecked():
-                sngcds = list(sngprcsssplt['REFERENCIA'])
-            for YY in sngcds:
-                YY = str(YY)
-                sngfls = [XX for XX in arqdir if re.search(YY, XX, re.I)]  # Separa os arquivos iguais aos codigos
-                sngfls = list(sngfls)  # Cria uma lista com os arquivos encontrados
-                for WW in sngfls:
-                    sngflsdstntn = os.path.join(sngprcssfd, WW)  # Cria o nome do arquivo futuro
-                    if os.path.exists(sngflsdstntn):  # Confere se o desenho a ser copiado ja existe
+                codigos_usinagem = list(codigos_por_usinagem['C'])
+
+            for codigo_usinagem in codigos_usinagem:
+                codigo_usinagem = str(codigo_usinagem)
+                arquivos = [arquivo for arquivo in self.ListaArquivos if re.search(codigo_usinagem, arquivo, re.I)]  # Separa os arquivos iguais aos codigos
+                for arquivo in arquivos:
+                    arquivo_futuro_usinagem = os.path.join(pasta_porte_usinagem, arquivo)  # Cria o nome do arquivo futuro
+                    if os.path.exists(arquivo_futuro_usinagem):  # Confere se o desenho a ser copiado ja existe
                         break
                     else:
-                        sngflsrgn = os.path.join(desenhos_path, WW)
-                        shutil.copy(sngflsrgn, sngflsdstntn)
+                        arquivo_origem_usinagem = os.path.join(self.Desenhos_Path, arquivo)
+                        shutil.copy(arquivo_origem_usinagem, pasta_porte_usinagem)
         print("Pasta de USINAGEM criada com sucesso.")
 
     def Atualizar(self):
