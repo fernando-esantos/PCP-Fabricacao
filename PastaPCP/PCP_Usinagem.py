@@ -155,7 +155,7 @@ class UI(QtW.QMainWindow):
             parent=self,
             caption="Selecione um arquivo",
             directory=self.settings.value("Ultima Pasta Acessada"),
-            filter="Excel Files (*.xls*)"
+            filter="Excel Files (*.xlsx *.xlsm)"
         )
         # Escreve o caminho do arquivo selecionado na linha correspondente da interface
         if fname1[0]:
@@ -271,7 +271,8 @@ class UI(QtW.QMainWindow):
                 io=self.PCP_Path,
                 sheet_name="Principal",
                 usecols="A,B,C,D,E,F,G,H,I,J,K,M",
-                skipfooter=1,
+                skiprows=1,
+                skipfooter=0,
                 dtype=str
             )
 
@@ -854,20 +855,20 @@ class UI(QtW.QMainWindow):
             # Isso acontece pois a variavel processo nao se aplica para a pasta de pintura.
             if 'pint' in processo.lower():
                 termos = ['pint', 'ral', 'fp']
-                for index, linha in enumerate(excel_pcp['QUANTITATIVO'].iter_rows(min_row=2, values_only=True), start=2):
+                for index, linha in enumerate(excel_pcp['QUANTITATIVO'].iter_rows(min_row=3, values_only=True), start=3):
                     if not any(termo in str(linha[9]).lower() for termo in termos):
                         linhas_filtradas.append(index)
             elif 'usinagem_p' in processo.lower():
                 termos = ['portal', '-']
-                for index, linha in enumerate(excel_pcp['QUANTITATIVO'].iter_rows(min_row=2, values_only=True), start=2):
+                for index, linha in enumerate(excel_pcp['QUANTITATIVO'].iter_rows(min_row=3, values_only=True), start=3):
                     if any(termo in str(linha[10]).lower() for termo in termos):
                         linhas_filtradas.append(index)
             elif flag_usi == True:
-                for index, linha in enumerate(excel_pcp['QUANTITATIVO'].iter_rows(min_row=2, values_only=True), start=2):
+                for index, linha in enumerate(excel_pcp['QUANTITATIVO'].iter_rows(min_row=3, values_only=True), start=3):
                     if processo not in str(linha[12]):
                         linhas_filtradas.append(index)
             else:
-                for index, linha in enumerate(excel_pcp['QUANTITATIVO'].iter_rows(min_row=2, values_only=True), start=2):
+                for index, linha in enumerate(excel_pcp['QUANTITATIVO'].iter_rows(min_row=3, values_only=True), start=3):
                     if processo not in str(linha[6]).split("+"):
                         linhas_filtradas.append(index)
 
@@ -878,7 +879,7 @@ class UI(QtW.QMainWindow):
             # Remove as cores da planilha exceto na primeira linha
             no_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
             plan = excel_pcp['QUANTITATIVO']
-            for row in plan.iter_rows(min_row=2, max_row=plan.max_row, min_col=1, max_col=plan.max_column):
+            for row in plan.iter_rows(min_row=3, max_row=plan.max_row, min_col=1, max_col=plan.max_column):
                 for cell in row:
                     cell.fill = no_fill
 
@@ -979,7 +980,7 @@ class UI(QtW.QMainWindow):
                 print("Para prosseguir preencha projeto e lista corretamente.")
                 return
 
-            # Caminhos para os arquivos básicos, fornecidos pelo operador
+            # Caminhos para os arquivos-base, fornecidos pelo usuario
             pmspath = (self.lineEdit_ArquivoPMS.text())
             caminho_pcp_padrao = (self.lineEdit_ArquivoPCPPadrao.text())
 
@@ -1018,11 +1019,11 @@ class UI(QtW.QMainWindow):
                 'O': 10
             }
 
-            # Carrega o arquivo XLSM
+            # Carrega o arquivo .XLSM
             arquivo_excel = load_workbook(arquivo_pcp_zero, keep_vba=True)
             # Seleciona a planilha onde serão adicionados os dados do CSV
             planilha_principal = arquivo_excel['Principal']
-            planilha_resumo = arquivo_excel['Resumo']
+            # planilha_resumo = arquivo_excel['Resumo']
 
             ###############################################################################
             # SEQUENCIA DE COMANDOS PARA FORMATAR OS DADOS ANTES DE COLAR NA PLANILHA PCP #
@@ -1075,45 +1076,17 @@ class UI(QtW.QMainWindow):
             for index_linha, linha in arquivo_csv.iterrows():
                 for index_coluna, valor_celula in linha.items():
                     novo_index_coluna = dict_colunas[index_coluna]
-                    planilha_principal.cell(row=index_linha + 2, column=novo_index_coluna, value=valor_celula)
-                ultima_linha_preenchida = index_linha + 2
+                    planilha_principal.cell(row=index_linha + 3, column=novo_index_coluna, value=valor_celula)
+                ultima_linha_preenchida = index_linha + 3
 
             print('Arquivo excel do PCP preenchido.')
 
             # Deleta as linhas que sobram na planilha
-            ultima_linha = planilha_principal.max_row - 1
-            for linha in range((ultima_linha - 1), ultima_linha_preenchida, -1):
+            ultima_linha = planilha_principal.max_row
+            for linha in range((ultima_linha), ultima_linha_preenchida, -1):
                 planilha_principal.delete_rows(linha)
 
             print('Deletadas as linhas extras.')
-
-            # Corrige as fórmulas de soma com os totais após deletar as linhas
-            ultima_linha = planilha_principal.max_row - 1
-            planilha_principal.cell(row=ultima_linha, column=14).value = f'=SUM(N2:N{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=15).value = f'=SUM(O2:O{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=16).value = f'=SUM(P2:P{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=17).value = f'=SUM(Q2:Q{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=18).value = f'=SUM(R2:R{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=19).value = f'=SUM(S2:S{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=20).value = f'=SUM(T2:T{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=21).value = f'=SUM(U2:U{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=22).value = f'=SUM(V2:V{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=23).value = f'=SUM(W2:W{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=24).value = f'=SUM(X2:X{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=25).value = f'=SUM(Y2:Y{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=26).value = f'=SUM(Z2:Z{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=27).value = f'=SUM(AA2:AA{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=28).value = f'=SUM(AB2:AB{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=29).value = f'=SUM(AC2:AC{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=30).value = f'=SUM(AD2:AD{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=31).value = f'=SUM(AE2:AE{ultima_linha - 1})'
-            planilha_principal.cell(row=ultima_linha, column=32).value = f'=SUM(AF2:AF{ultima_linha - 1})'
-            
-            planilha_resumo.cell(row=2, column=2).value = f'=SUM((Principal!O{ultima_linha})*(1+E2))' # Material
-            planilha_resumo.cell(row=3, column=2).value = f'=SUM((Principal!AA{ultima_linha})*(1+E3))' # Usinagem
-            planilha_resumo.cell(row=4, column=2).value = f'=SUM((Principal!W{ultima_linha})*(1+E4))' # Pintura
-            planilha_resumo.cell(row=5, column=2).value = f'=SUM((Principal!Z{ultima_linha})*(1+E5))' # Caldeiraria
-            planilha_resumo.cell(row=6, column=2).value = f'=SUM((Principal!X{ultima_linha}+Principal!Y{ultima_linha})*(1+E6))' # Tratamentos
 
             # Salva as alterações no arquivo XLSM
             arquivo_excel.save(arquivo_pcp_zero)
