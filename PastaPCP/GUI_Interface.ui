@@ -109,7 +109,7 @@
       </property>
       <widget class="QPushButton" name="pushButton_LimparTudo">
        <property name="enabled">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
        <property name="geometry">
         <rect>
@@ -208,7 +208,7 @@
        </property>
       </widget>
      </widget>
-     <widget class="QGroupBox" name="GrupoReserva">
+     <widget class="QGroupBox" name="GruposPastas1">
       <property name="enabled">
        <bool>true</bool>
       </property>
@@ -236,7 +236,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Pastas</string>
+        <string>Pastas Principais</string>
        </property>
       </widget>
       <widget class="QCheckBox" name="checkBox_Processos">
@@ -255,20 +255,20 @@
         <bool>true</bool>
        </property>
       </widget>
-      <widget class="QCheckBox" name="checkBox_Res2">
+      <widget class="QCheckBox" name="checkBox_FornUsi">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <property name="geometry">
         <rect>
          <x>10</x>
          <y>60</y>
-         <width>101</width>
+         <width>120</width>
          <height>17</height>
         </rect>
        </property>
        <property name="text">
-        <string>-</string>
+        <string>Forn. Usinagem</string>
        </property>
       </widget>
      </widget>
@@ -446,7 +446,7 @@ e refaz</string>
        </property>
       </widget>
      </widget>
-     <widget class="QGroupBox" name="GrupoPastas">
+     <widget class="QGroupBox" name="GrupoPastas2">
       <property name="geometry">
        <rect>
         <x>170</x>
@@ -525,7 +525,7 @@ e refaz</string>
         </rect>
        </property>
        <property name="text">
-        <string>Arquivo PMS com a lista para fabricacao</string>
+        <string>Arquivo PMS (CSV) com a lista para fabricacao</string>
        </property>
       </widget>
       <widget class="QPushButton" name="pushButton_ArquivoPMS">
@@ -580,7 +580,7 @@ e refaz</string>
         </rect>
        </property>
        <property name="text">
-        <string>Arquivo PCP Padrão</string>
+        <string>Arquivo PCP padrão (em branco)</string>
        </property>
       </widget>
       <widget class="QPushButton" name="pushButton_ArquivoPCPPadrao">
@@ -760,9 +760,73 @@ faltantes</string>
        </property>
       </widget>
      </widget>
+     <widget class="QGroupBox" name="GrupoOpcaoVerificar">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>480</x>
+        <y>170</y>
+        <width>121</width>
+        <height>90</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QLabel" name="label_OpcaoVerificar">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>5</y>
+         <width>130</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Verificar Arquivos</string>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="checkBox_CSV">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>101</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>CSV</string>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="checkBox_PCP">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>60</y>
+         <width>120</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>PCP (Excel)</string>
+       </property>
+      </widget>
+     </widget>
     </widget>
    </widget>
-   <widget class="QTextEdit" name="StatusPanel">
+   <widget class="QPlainTextEdit" name="StatusPanel">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -782,11 +846,8 @@ faltantes</string>
       <pointsize>9</pointsize>
      </font>
     </property>
-    <property name="acceptRichText">
-     <bool>false</bool>
-    </property>
-    <property name="textInteractionFlags">
-     <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+    <property name="readOnly">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>
